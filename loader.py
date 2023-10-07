@@ -1,11 +1,10 @@
-from config                             import *
-from src.db                             import tools
-from src.db.render                      import Render
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram                            import Bot, Dispatcher, types
+import config
 
-bot     = Bot(token=BOT_TOKEN, parse_mode=types.ParseMode.HTML)
+from aiogram import Bot, Dispatcher
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.contrib.fsm_storage.redis import RedisStorage2
+
 storage = MemoryStorage()
+bot     = Bot(token=config.BOT_TOKEN, parse_mode='HTML')
 dp      = Dispatcher(bot, storage=storage)
-db      = tools.Database()
-render  = Render()
+
