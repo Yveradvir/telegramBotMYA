@@ -3,12 +3,15 @@ import logging
 import tgbot
 
 from loader import (
-    dp, storage, bot
+    dp, storage, bot, config 
 )
     
 
 async def main():
     try:
+        for admin in config.ADMINS:
+            await dp.bot.send_message(admin, "Бот Запущен")
+
         await dp.start_polling()
     finally:
         await dp.storage.close()
