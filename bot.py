@@ -1,15 +1,14 @@
 import asyncio
-import logging
 import tgbot
 
 from loader import (
-    dp, storage, bot, config 
+    dp, storage, bot, ADMINS
 )
     
 
 async def main():
     try:
-        for admin in config.ADMINS:
+        for admin in ADMINS:
             await dp.bot.send_message(admin, "Бот Запущен")
 
         await dp.start_polling()

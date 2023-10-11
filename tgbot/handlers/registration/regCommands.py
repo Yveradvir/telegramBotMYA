@@ -1,6 +1,6 @@
-from tgbot              import keyboards
+from tgbot              import keyboards, utils
 from tgbot.states       import RegStates
-from loader             import dp
+from loader             import dp, db
 
 from aiogram            import types
 from aiogram.dispatcher import FSMContext
@@ -11,10 +11,16 @@ buttons = [
     ['Accept', 'Reject']
 ]
 
+@dp.message_handler(commands=["test"])
+async def second_step(message: types.Message):
+    my_test = await db.select_test_info("users")
+    print(my_test)
+
 @dp.message_handler(commands=["reg"])
 async def reg(message: types.Message, state: FSMContext):
+    uid = message.from_user.id
     async with state.proxy() as data:
-        data["uid"] = message.from_user.id
+        data["uid"] = uid
     
     await RegStates.waitForName.set()
     await message.answer(
@@ -27,7 +33,7 @@ async def waitForName(message: types.Message, state: FSMContext):
     name = message.text.capitalize()
 
     if len(name) > 30:
-        await message.anwser("Sorry, but your name is more than 30 letters")
+        await utils.warn(message, "Sorry, but your name is more than 30 letters")
     else:
         async with state.proxy() as data:
             data["name"] = name
@@ -42,7 +48,7 @@ async def waitForAge(message: types.Message, state: FSMContext):
     age = message.text
 
     if not age.isdigit():
-        await message.answer("Sorry, but your age is not numeric number")
+        await utils.warn(message, "Sorry, but your age is not numeric number")
     else:
         async with state.proxy() as data:
             data["age"] = age
@@ -60,10 +66,10 @@ async def waitForDescription(message: types.Message, state: FSMContext):
     localState = None
 
     if description == buttons[0]:
-        await message.answer("Okay, next.")
+        await utils.warn(message, "Okay, next.")
     else:
         if len(description) > 300:
-            await message.answer("Sorry, no more than 300 letters")
+            await utils.warn(message, "Sorry, no more than 300 letters")
             localState = "Please, please re-register, so your description is longer than 300 characters"
         else:
             localState = description
@@ -85,16 +91,17 @@ async def waitForLanguage(message: types.Message, state: FSMContext):
     if language == buttons[1][0]: choice = "ua"
     elif language == buttons[1][1]: choice = "pl"
     elif language == buttons[1][2]: choice = "en"
-    else: message.answer("sorry, this language not exists")
-
-    async with state.proxy() as data:
-        data["language"] = choice
     
-    await RegStates.waitForConfrime.set()
-    await message.answer(
-        "great, confrime!",
-        reply_markup=keyboards.replyKeyboard(buttons[2])
-    )
+    if choice in ["ua", "pl", "en"]:
+        async with state.proxy() as data:
+            data["language"] = choice
+        
+        await RegStates.waitForConfrime.set()
+        await message.answer(
+            "great, confrime!",
+            reply_markup=keyboards.replyKeyboard(buttons[2])
+        )
+    else: await utils.warn(message, "sorry, this language not exists")
 
 @dp.message_handler(content_types=types.ContentTypes.TEXT, state=RegStates.waitForConfrime)
 async def waitForConfrime(message: types.Message, state: FSMContext):
@@ -102,10 +109,23 @@ async def waitForConfrime(message: types.Message, state: FSMContext):
     
     if choice == buttons[2][0]:
         async with state.proxy() as data:
-            await message.answer(data)
-        
+            await db.userCreate(
+                tid         = data["uid"],
+                name        = data["name"],
+                age         = data["age"],
+                description = data["description"],
+                language    = data["language"]
+            )
+
         await state.finish()
     elif choice == buttons[2][1]:
         await message.answer("cancel")
         await state.finish()
     else: await message.answer("not exists")
+
+
+@dp.message_handler(commands=["deactivation"])
+async def deactivation(message: types.Message):
+    uid = message.from_user.id
+    print((await db.isExists(uid)))
+    await message.answer("Okay, confrime it")
