@@ -13,7 +13,7 @@ buttons = [
 
 @dp.message_handler(commands=["test"])
 async def second_step(message: types.Message):
-    my_test = await db.select_test_info("users")
+    my_test = (await db.select_test_info())
     print(my_test)
 
 @dp.message_handler(commands=["reg"])
@@ -109,13 +109,14 @@ async def waitForConfrime(message: types.Message, state: FSMContext):
     
     if choice == buttons[2][0]:
         async with state.proxy() as data:
-            await db.userCreate(
-                tid         = data["uid"],
-                name        = data["name"],
-                age         = data["age"],
-                description = data["description"],
-                language    = data["language"]
-            )
+            async with db as slot: 
+                await slot.userCreate(
+                    tid         = data["uid"],
+                    name        = data["name"],
+                    age         = data["age"],
+                    description = data["description"],
+                    language    = data["language"]
+                )
 
         await state.finish()
     elif choice == buttons[2][1]:
@@ -127,5 +128,7 @@ async def waitForConfrime(message: types.Message, state: FSMContext):
 @dp.message_handler(commands=["deactivation"])
 async def deactivation(message: types.Message):
     uid = message.from_user.id
-    print((await db.isExists(uid)))
+    async with db as slot: 
+        a = (await slot.isExists(uid))
+        print(a)
     await message.answer("Okay, confrime it")
