@@ -18,16 +18,16 @@ class Database:
     async def __aexit__(self, exc_type, exc_value, traceback):
         await self.conn.close()
 
-    async def userCreate(self, tid, name, age, description, language):
-        sql = "INSERT INTO users(tid, name, age, description, language) VALUES ($1, $2, $3, $4, $5)"
+    async def userCreate(self, tid, name, age, description, language, exist):
+        if exist: sql = "UPDATE users SET name=$2, age=$3, description=$4, language=$5 WHERE tid=$1"
+        else:     sql = "INSERT INTO users(tid, name, age, description, language) VALUES ($1, $2, $3, $4, $5)"
         await self.conn.execute(sql, tid, name, age, description, language)
+
+    async def userDelete(self, tid):
+        sql = "DELETE FROM users WHERE tid=$1"
+        await self.conn.execute(sql, tid)
 
     async def isExists(self, tid):
         sql = "SELECT * FROM users WHERE tid=$1"
         query = await self.conn.fetch(sql, tid)
         return query
-
-    async def select_test_info(self):
-        sql = "SELECT * FROM users"
-        result = await self.conn.fetch(sql)
-        return result

@@ -11,17 +11,18 @@ buttons = [
     ['Accept', 'Reject']
 ]
 
-@dp.message_handler(commands=["test"])
-async def second_step(message: types.Message):
-    my_test = (await db.select_test_info())
-    print(my_test)
 
 @dp.message_handler(commands=["reg"])
 async def reg(message: types.Message, state: FSMContext):
     uid = message.from_user.id
-    async with state.proxy() as data:
-        data["uid"] = uid
     
+    async with state.proxy() as data:
+        async with db as slot:
+            data["exist?"] = True if (await slot.isExists(uid)) else False
+            data["uid"]    = uid
+
+            print(data["exist?"])
+
     await RegStates.waitForName.set()
     await message.answer(
         "great, let's start our registration process! Enter your name(no more than 30 letters)"
@@ -51,7 +52,7 @@ async def waitForAge(message: types.Message, state: FSMContext):
         await utils.warn(message, "Sorry, but your age is not numeric number")
     else:
         async with state.proxy() as data:
-            data["age"] = age
+            data["age"] = int(age)
         
         await RegStates.waitForDescription.set()
         await message.answer(
@@ -65,7 +66,7 @@ async def waitForDescription(message: types.Message, state: FSMContext):
     description = message.text
     localState = None
 
-    if description == buttons[0]:
+    if description == buttons[0][0]:
         await utils.warn(message, "Okay, next.")
     else:
         if len(description) > 300:
@@ -88,11 +89,11 @@ async def waitForLanguage(message: types.Message, state: FSMContext):
     language = message.text
     choice = None
 
-    if language == buttons[1][0]: choice = "ua"
+    if language == buttons[1][0]: choice = "uk"
     elif language == buttons[1][1]: choice = "pl"
     elif language == buttons[1][2]: choice = "en"
     
-    if choice in ["ua", "pl", "en"]:
+    if choice in ["uk", "pl", "en"]:
         async with state.proxy() as data:
             data["language"] = choice
         
@@ -115,7 +116,8 @@ async def waitForConfrime(message: types.Message, state: FSMContext):
                     name        = data["name"],
                     age         = data["age"],
                     description = data["description"],
-                    language    = data["language"]
+                    language    = data["language"],
+                    exist       = data["exist?"]
                 )
 
         await state.finish()
@@ -129,6 +131,7 @@ async def waitForConfrime(message: types.Message, state: FSMContext):
 async def deactivation(message: types.Message):
     uid = message.from_user.id
     async with db as slot: 
-        a = (await slot.isExists(uid))
-        print(a)
-    await message.answer("Okay, confrime it")
+        if (await slot.isExists(uid)):
+            await slot.userDelete(uid)
+        else:
+            await utils.warn(message, "you're not exist")
