@@ -28,8 +28,9 @@ class Database:
         sql = "DELETE FROM users WHERE tid=$1"
         await self.conn.execute(sql, tid)
 
-    async def isExists(self, tid):
-        sql = "SELECT * FROM users WHERE tid=$1"
+    async def isExists(self, tid, byId=False):
+        if byId: sql = "SELECT * FROM users WHERE id=$1"
+        else: sql = "SELECT * FROM users WHERE tid=$1"
         query = await self.conn.fetch(sql, tid)
         return query
 

@@ -8,6 +8,8 @@ from aiogram.dispatcher import FSMContext
 from random import randint
 
 async def random_profile(message: types.Message, profile_id):
+    async with db as slot:
+        currentProfile = (await slot.isExists(profile_id, True))[0]
     await message.answer(profile_id)
 
 @dp.message_handler(commands=["findpr"])
