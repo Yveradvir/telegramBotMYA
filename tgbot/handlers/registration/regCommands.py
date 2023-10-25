@@ -8,7 +8,8 @@ from aiogram.dispatcher import FSMContext
 buttons = [
     ['Rejection of the description'], 
     ['Ukrainian 🇺🇦', 'Polish 🇵🇱', 'English 🇬🇧'], 
-    ['Accept', 'Reject']
+    ['Confirm', 'Contradict'],
+    ['Yes', 'No']
 ]
 
 
@@ -23,67 +24,10 @@ async def reg(message: types.Message, state: FSMContext):
 
             print(data["exist?"])
 
-    await RegStates.waitForName.set()
-    await message.answer(
-        "great, let's start our registration process! Enter your name(no more than 30 letters)"
-    )
-
-
-@dp.message_handler(content_types=types.ContentTypes.TEXT, state=RegStates.waitForName)
-async def waitForName(message: types.Message, state: FSMContext):
-    name = message.text.capitalize()
-
-    if len(name) > 30:
-        await utils.warn(message, "Sorry, but your name is more than 30 letters")
-    else:
-        async with state.proxy() as data:
-            data["name"] = name
-        
-        await RegStates.waitForAge.set()
-        await message.answer(
-            "goof, let's enter your age!"
-        )
-
-@dp.message_handler(content_types=types.ContentTypes.TEXT, state=RegStates.waitForAge)
-async def waitForAge(message: types.Message, state: FSMContext):
-    age = message.text
-
-    if not age.isdigit():
-        await utils.warn(message, "Sorry, but your age is not numeric number")
-    else:
-        async with state.proxy() as data:
-            data["age"] = int(age)
-        
-        await RegStates.waitForDescription.set()
-        await message.answer(
-            "Well well well, enter your description(your hobbies, intereses)",
-            reply_markup=keyboards.reply.replyKeyboard(buttons[0])
-        )
-
-
-@dp.message_handler(content_types=types.ContentTypes.TEXT, state=RegStates.waitForDescription)
-async def waitForDescription(message: types.Message, state: FSMContext):
-    description = message.text
-    localState = None
-
-    if description == buttons[0][0]:
-        await utils.warn(message, "Okay, next.")
-    else:
-        if len(description) > 300:
-            await utils.warn(message, "Sorry, no more than 300 letters")
-            localState = "Please, please re-register, so your description is longer than 300 characters"
-        else:
-            localState = description
-
-    async with state.proxy() as data:
-        data["description"] = localState
-    
     await RegStates.waitForLanguage.set()
-    await message.answer(
-        "great, choice your language!",
-        reply_markup=keyboards.replyKeyboard(buttons[1])
-    )
-
+    await message.answer(text="great, let's start our registration process! Enter your language", 
+                         reply_markup=keyboards.replyKeyboard(buttons[1]))
+    
 @dp.message_handler(content_types=types.ContentTypes.TEXT, state=RegStates.waitForLanguage)
 async def waitForLanguage(message: types.Message, state: FSMContext):
     language = message.text
@@ -93,23 +37,110 @@ async def waitForLanguage(message: types.Message, state: FSMContext):
     elif language == buttons[1][1]: choice = "pl"
     elif language == buttons[1][2]: choice = "en"
     
-    if choice in ["uk", "pl", "en"]:
-        async with state.proxy() as data:
+    async with state.proxy() as data:
+        if choice in ["uk", "pl", "en"]:
             data["language"] = choice
-        
-        await RegStates.waitForConfrime.set()
-        await message.answer(
-            "great, confrime!",
-            reply_markup=keyboards.replyKeyboard(buttons[2])
-        )
-    else: await utils.warn(message, "sorry, this language not exists")
+            
+            await RegStates.waitForName.set()
+            await utils.translateText(
+                message,
+                "great, confirm! Enter your name.",
+                data["language"],
+                markup=keyboards.replyKeyboard(buttons[2])
+            )
+        else: await utils.transWarn(message, "sorry, this language not exists", data["language"])
 
-@dp.message_handler(content_types=types.ContentTypes.TEXT, state=RegStates.waitForConfrime)
-async def waitForConfrime(message: types.Message, state: FSMContext):
+@dp.message_handler(content_types=types.ContentTypes.TEXT, state=RegStates.waitForName)
+async def waitForName(message: types.Message, state: FSMContext):
+    name = message.text.capitalize()
+
+    async with state.proxy() as data:
+    
+        if len(name) > 30:
+            await utils.transWarn( message, "good, let's enter your age!", data["language"])
+        else:
+            data["name"] = name
+            await RegStates.waitForAge.set()
+            await utils.translateText(message, "good, let's enter your age!", data["language"])
+
+@dp.message_handler(content_types=types.ContentTypes.TEXT, state=RegStates.waitForAge)
+async def waitForAge(message: types.Message, state: FSMContext):
+    age = message.text
+
+    async with state.proxy() as data:
+        if not age.isdigit():
+            await utils.transWarn(message, "Sorry, but your age is not numeric number")
+        else:
+            data["age"] = int(age)
+            
+            await RegStates.waitForDescription.set()
+            await utils.translateText(
+                message,
+                "Well well well, enter your description(your hobbies, intereses)",
+                data["language"],
+                markup=keyboards.reply.replyKeyboard(buttons[0])
+            )
+
+
+@dp.message_handler(content_types=types.ContentTypes.TEXT, state=RegStates.waitForDescription)
+async def waitForDescription(message: types.Message, state: FSMContext):
+    description = message.text
+    localState = None
+
+    
+    async with state.proxy() as data:
+        if description == buttons[0][0]:
+            await utils.transWarn(message, "Okay, next.")
+        else:
+            try:
+                if len(description) > 300:
+                    raise ValueError('longer')
+                else:
+                    localState = description
+
+                data["description"] = localState
+            
+                await RegStates.waitForProfile.set()
+                await utils.translateText(
+                    message,
+                    "great, choice permission for your profile(if you decline then we will don't place link on you!)\n\n\n\nDo you want us to show your username with a link when displaying your profile?",
+                    data["language"],
+                    markup=keyboards.replyKeyboard(buttons[-1])
+                )
+            except ValueError:
+                await utils.transWarn(message, "Sorry, no more than 300 letters", data['language'])
+
+
+@dp.message_handler(content_types=types.ContentTypes.TEXT, state=RegStates.waitForProfile)
+async def waitForProfile(message: types.Message, state: FSMContext):
+    choice = message.text
+    choose = None
+
+    async with state.proxy() as data:
+        try:
+            if choice == buttons[-1][0]:    choose = True
+            elif choice == buttons[-1][1]:  choose = False
+            else: raise ValueError('not exist')
+            
+            data['profile'] = choose
+
+            await RegStates.waitForConfirm.set()
+            await utils.translateText(
+                message,
+                "great, confirm!",
+                data["language"],
+                markup=keyboards.replyKeyboard(buttons[2])
+            )
+
+        except ValueError:
+            await utils.transWarn(message, "sorry, this language not exists", data['language'])
+
+@dp.message_handler(content_types=types.ContentTypes.TEXT, state=RegStates.waitForConfirm)
+async def waitForConfirm(message: types.Message, state: FSMContext):
     choice = message.text
     
-    if choice == buttons[2][0]:
-        async with state.proxy() as data:
+    async with state.proxy() as data:
+        if choice == buttons[2][0]:
             async with db as slot: 
                 await slot.userCreate(
                     tid         = data["uid"],
@@ -117,14 +148,15 @@ async def waitForConfrime(message: types.Message, state: FSMContext):
                     age         = data["age"],
                     description = data["description"],
                     language    = data["language"],
+                    profile     = data["profile"],
                     exist       = data["exist?"]
                 )
 
-        await state.finish()
-    elif choice == buttons[2][1]:
-        await message.answer("cancel")
-        await state.finish()
-    else: await message.answer("not exists")
+            await state.finish()
+        elif choice == buttons[2][1]:
+            await utils.translateText(message, "cancel", data["language"])
+            await state.finish()
+        else: await utils.transWarn(message, "not exists", data["language"])
 
 
 @dp.message_handler(commands=["deactivation"])

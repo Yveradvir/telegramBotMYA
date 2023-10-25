@@ -5,5 +5,6 @@ class RegStates(StatesGroup):
     waitForAge = State()
     waitForDescription = State()
     waitForLanguage = State()
-    waitForConfrime = State()
+    waitForProfile = State()
+    waitForConfirm = State()
     waitForRemove = State()

@@ -11,6 +11,8 @@ async def main():
         for admin in ADMINS:
             await dp.bot.send_message(admin, "Бот Запущен")
 
+            await tgbot.utils.set_default_commands(dp)
+
         await dp.start_polling()
     finally:
         await dp.storage.close()
