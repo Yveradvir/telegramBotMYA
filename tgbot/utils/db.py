@@ -20,8 +20,10 @@ class Database:
 
 
     async def userCreate(self, tid, name, age, description, language, profile, exist):
-        if exist: sql = "UPDATE users SET name=$2, age=$3, description=$4, language=$5 profile=$6 WHERE tid=$1"
-        else:     sql = "INSERT INTO users(tid, name, age, description, language, profile) VALUES ($1, $2, $3, $4, $5, $6)"
+        if exist:
+            sql = "UPDATE users SET name=$2, age=$3, description=$4, language=$5, profile=$6 WHERE tid=$1"
+        else:
+            sql = "INSERT INTO users(tid, name, age, description, language, profile) VALUES ($1, $2, $3, $4, $5, $6)"
         await self.conn.execute(sql, tid, name, age, description, language, profile)
 
     async def userDelete(self, tid):

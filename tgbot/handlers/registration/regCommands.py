@@ -122,6 +122,7 @@ async def waitForProfile(message: types.Message, state: FSMContext):
             elif choice == buttons[-1][1]:  choose = False
             else: raise ValueError('not exist')
             
+            print(choose)
             data['profile'] = choose
 
             await RegStates.waitForConfirm.set()

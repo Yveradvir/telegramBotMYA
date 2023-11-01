@@ -1,2 +1,2 @@
-from . import inline
+from .inline import inlineKeyboard
 from .reply import replyKeyboard

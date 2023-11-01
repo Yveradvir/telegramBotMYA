@@ -11,14 +11,14 @@ messageTexts = {
 async def help(message: types.Message):
     try:
         print(message.text)
-        user = await db.isExists(message.from_user.id)
+        user = (await db.isExists(message.from_user.id))[0]
         if user:
             userLang = user["language"]
             
-            utils.messageUtils(
+            await utils.messageUtils(
                 message, "Будь ласка, це версія команди help без аргументів\nДоповніть до /help одне з ключевих слів\n find"
             )
             
     except Exception as e:
         print(e)
-        message.answer("sorry, something wrong...")
+        await message.answer("sorry, something wrong...")

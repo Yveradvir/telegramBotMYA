@@ -1,9 +1,14 @@
-from aiogram import types
+from aiogram import types, Bot
 
-async def set_default_commands(dp):
-    await dp.bot.set_my_commands([
-        types.BotCommand("start", "start"),
-        types.BotCommand("reg", "Register and re-register"),
-        types.BotCommand("npost", "new post"),
-        types.BotCommand("deactivarion", "deactivate your account"),
-    ])
+
+commands = [
+    types.BotCommand("start", "start"),
+    types.BotCommand("help", "help"),
+    types.BotCommand("reg", "Register and re-register"),
+    types.BotCommand("npost", "new post"),
+    types.BotCommand("deactivarion", "deactivate your account"),
+    types.BotCommand("findpr", "You get a random profile"),
+    types.BotCommand("findps", "You get a random post"),
+    types.BotCommand("findprid", "You get a profile by id, if exists"),
+    types.BotCommand("findpsid", "You get a post by id, if exists")
+]
