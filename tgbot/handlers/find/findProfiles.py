@@ -1,11 +1,10 @@
 from tgbot import keyboards, utils
-from tgbot.states import PostStates
 from loader import dp, db
 from aiogram import types
 from aiogram.dispatcher import FSMContext
 from random import randint
 
-buttons = ["🆔", "🎫"]
+buttons = ["🆔 author", "🎫 translate"]
 callback = ["id", "translate"]
 
 async def random_profile(message: types.Message, state: FSMContext, profile_id):
@@ -16,13 +15,23 @@ async def random_profile(message: types.Message, state: FSMContext, profile_id):
             if currentProfile:
                 data["profile_id"] = profile_id
                 try:
-                    data["language"] = (await slot.isExists(message.from_user.id))[0]['language']
+                    cruser = (await slot.isExists(message.from_user.id))[0]
+                    data["language"] = cruser['language']
                 except Exception:
                     return "Sorry, you aren't exist"
                 else:
+                    if currentProfile['profile'] == True and currentProfile['tid']:
+                        chatofuser = await dp.bot.get_chat(currentProfile['tid'])
+                        use = chatofuser.username
+
+                    else: use = "N/A"
                     msg = f''
-                    msg += f'ℹ {str(currentProfile["name"])}\n'
-                    
+                    msg += f'ℹ name - {str(currentProfile["name"])}\n'
+                    msg += f'ℹ age  - {str(currentProfile["age"])}\n'
+                    msg += f'ℹ descriprion - {str(currentProfile["description"])}\n'
+                    msg += f'ℹ language    - {str(currentProfile["language"])}\n'
+                    msg += f'ℹ username    - {use}'
+
                     return msg
 
 @dp.callback_query_handler(text=callback[0])
@@ -31,10 +40,11 @@ async def getProfId(message: types.Message, state: FSMContext):
         await utils.transWarn(message, f'ID цього запису -> \n{data["profile_id"]}', data["language"], timer=6)
 
 @dp.callback_query_handler(text=callback[1])
-async def getProfId(message: types.Message, state: FSMContext):
+async def getProfTrans(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         async with db as slot:
-            await utils.transWarn(message, f'ID цього запису -> \n{data["profile_id"]}', data["language"], timer=6)
+            profile = await utils.justTrans((await slot.isExists(data["profile_id"], True))[0]["description"], data["language"])
+            await utils.transWarn(message, f'Переклад цього запису -> \n{profile}', data["language"], timer=6)
 
 @dp.message_handler(commands=["findpr"])
 async def findp(message: types.Message, state: FSMContext):
@@ -73,7 +83,7 @@ async def findpId(message: types.Message, state: FSMContext):
                 if len(parts) >= 2:
                     profile_id = int(parts[1])
                     result = await random_profile(message, state, profile_id)
-                    await message.answer(text=result)
+                    await message.answer(text=result, reply_markup=keyboards.inlineKeyboard(buttons, callback))
                 else:
                     await utils.transWarn(
                         message, "Sorry, but you didn't provide an ID. Send this command like \"/findprid <ID>\"",

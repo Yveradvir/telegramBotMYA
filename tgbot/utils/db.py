@@ -47,9 +47,9 @@ class Database:
     #--post
 
     async def postCreate(self, title, content, aid, uid):
-        sql = "INSERT INTO posts(title, content, answer_id, author_id) VALUES $1, $2, $3, $4"
+        sql = "INSERT INTO posts(title, content, answer_id, author_id) VALUES ($1, $2, $3, $4)"
         await self.conn.execute(sql, title, content, aid, uid)
 
     async def isExistsPost(self, postId):
-        sql = "SELECT * FROM posts WHERE id = ?"
+        sql = "SELECT * FROM posts WHERE id = $1"
         return await self.conn.fetch(sql, postId)

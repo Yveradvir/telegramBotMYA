@@ -38,7 +38,7 @@ async def postWaitForTitle(message: types.Message, state: FSMContext):
                 await PostStates.waitForContent.set()
                 await utils.messageUtils.translateText(
                     message,
-                    "Прекрасно, тепер надайте заголовок вашого поста",
+                    "Прекрасно, тепер надайте опис вашого поста",
                     data["lang"]
                 )
             else: raise ValueError("Not correct")
@@ -71,63 +71,52 @@ async def postWaitForContent(message: types.Message, state: FSMContext):
 @dp.message_handler(content_types=types.ContentTypes.TEXT, state=PostStates.waitForAnwserId)
 async def postwaitForAnwserId(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        message_text = str(message.text)
-        print(message_text)
+        msg:str = message.text
         try:
-            if message_text == "reject":
+            if msg == "Reject":
                 print("This is true")
                 data["aid"] = None  # Fix the assignment here
-                await PostStates.waitForConfirm.set()
                 await utils.messageUtils.translateText(
                     message,
                     "Добре, враховуйте, що ви не відповіли на пост, але на ваш - можуть.\nПідтвердіть, будь-ласка",
                     data["lang"], keyboards.replyKeyboard(buttons[1])
                 )
+                await PostStates.waitForConfirm.set()
             else:
-                print("This is false")
-                if message_text.isdigit():
+                if msg.isdigit():
+                    msg = int(msg)
                     async with db as slot:
-                        if await slot.isExistsPost(message_text):  # Check if post exists
-                            data["aid"] = message_text
-                            await PostStates.waitForConfirm.set()
+                        if await slot.isExistsPost(msg):  # Check if post exists
+                            data["aid"] = msg
                             await utils.messageUtils.translateText(
                                 message,
                                 "Підтвердіть, будь-ласка",
                                 data["lang"], keyboards.replyKeyboard(buttons[1])
                             )
-                        else:
-                            raise Exception("Post with this ID does not exist")
-                else:
-                    raise TypeError("Sorry, not a digit")
-        except TypeError as e:
-            await utils.messageUtils.translateText(
-                message, "ID повідомленнь тільки цифрові",
-                data["lang"]
-            )
+                            await PostStates.waitForConfirm.set()
         except Exception as e:
             await utils.messageUtils.translateText(
                 message, "Вибачте, але такого ID поста не існує",
                 data["lang"]
             )
             print(e)
-
+            
 @dp.message_handler(content_types=types.ContentTypes.TEXT, state=PostStates.waitForConfirm)
 async def postWaitForConfirm(message: types.Message, state: FSMContext):
     choice = message.text
 
-    if choice == buttons[2][0]:
+    if choice == buttons[1][0]:
         async with state.proxy() as data:
             async with db as slot: 
                 await slot.postCreate(
-                    title        = data["name"],
-                    description  = data["content"],
-                    answer_id    = data["aid"],
-                    author_id    = data["uid"],
-
+                    title        = data["title"],
+                    content      = data["content"],
+                    aid          = data["aid"],
+                    uid          = data["uid"]
                 )
 
         await state.finish()
-    elif choice == buttons[2][1]:
+    elif choice == buttons[1][1]:
         async with state.proxy() as data:
             await utils.messageUtils.translateText(message, "canceled", data["lang"])
         await state.finish()
