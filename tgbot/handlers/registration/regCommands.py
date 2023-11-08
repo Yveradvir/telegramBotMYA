@@ -45,8 +45,7 @@ async def waitForLanguage(message: types.Message, state: FSMContext):
             await utils.translateText(
                 message,
                 "great, confirm! Enter your name.",
-                data["language"],
-                markup=keyboards.replyKeyboard(buttons[2])
+                data["language"]
             )
         else: await utils.transWarn(message, "sorry, this language not exists", data["language"])
 
@@ -90,7 +89,17 @@ async def waitForDescription(message: types.Message, state: FSMContext):
     
     async with state.proxy() as data:
         if description == buttons[0][0]:
-            await utils.transWarn(message, "Okay, next.")
+
+            data["description"] = localState
+            await RegStates.waitForProfile.set()
+            
+            await utils.transWarn(message, "Okay, next.", data['language'], timer=2)
+            await utils.translateText(
+                message,
+                "great, choice permission for your profile(if you decline then we will don't place link on you!)\n\n\n\nDo you want us to show your username with a link when displaying your profile?",
+                data["language"],
+                markup=keyboards.replyKeyboard(buttons[-1])
+            )
         else:
             try:
                 if len(description) > 300:
@@ -153,6 +162,7 @@ async def waitForConfirm(message: types.Message, state: FSMContext):
                     exist       = data["exist?"]
                 )
 
+            await utils.translateText(message, "Ви пройшли регістрацію!", data["language"])
             await state.finish()
         elif choice == buttons[2][1]:
             await utils.translateText(message, "cancel", data["language"])

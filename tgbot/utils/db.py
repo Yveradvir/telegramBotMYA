@@ -27,6 +27,11 @@ class Database:
         await self.conn.execute(sql, tid, name, age, description, language, profile)
 
     async def userDelete(self, tid):
+        uid = (await self.conn.fetch("SELECT * FROM users WHERE tid = $1", tid))[0]['id'] 
+        await self.conn.execute("DELETE FROM posts WHERE author_id = $1", uid)
+        
+        print(uid)       
+        
         sql = "DELETE FROM users WHERE tid=$1"
         await self.conn.execute(sql, tid)
 
